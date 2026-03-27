@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>万能格式转换器</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; min-height: 100vh; }
+.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 24px 32px; text-align: center; }
+.header h1 { font-size: 24px; font-weight: 600; }
+.header p { font-size: 14px; opacity: 0.85; margin-top: 6px; }
+.container { max-width: 1200px; margin: 24px auto; padding: 0 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+.panel { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; }
+.panel-header { padding: 14px 18px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; }
+.panel-title { font-size: 15px; font-weight: 600; color: #333; }
+.panel-body { flex: 1; display: flex; flex-direction: column; }
+textarea { flex: 1; border: none; outline: none; padding: 16px; font-size: 14px; line-height: 1.7; resize: none; font-family: "SF Mono", "Menlo", monospace; min-height: 400px; }
+textarea::placeholder { color: #bbb; }
+.preview { flex: 1; padding: 16px; overflow-y: auto; min-height: 400px; }
+.controls { padding: 12px 16px; border-top: 1px solid #f0f0f0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #fafafa; }
+label { font-size: 13px; color: #666; }
+select { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; outline: none; }
+.btn { padding: 8px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-secondary { background: #f0f0f0; color: #333; }
+.btn-secondary:hover { background: #e5e5e5; }
+.btn-copy { background: #e6f7e6; color: #2d8a2d; }
+.btn-copy:hover { background: #d0efd0; }
+.tabs { display: flex; gap: 0; }
+.tab { padding: 6px 14px; font-size: 13px; cursor: pointer; border: 1px solid #ddd; background: #fafafa; color: #666; }
+.tab:first-child { border-radius: 6px 0 0 6px; }
+.tab:last-child { border-radius: 0 6px 6px 0; }
+.tab.active { background: #667eea; color: #fff; border-color: #667eea; }
+.status { padding: 8px 16px; font-size: 12px; color: #999; background: #fafafa; border-top: 1px solid #f0f0f0; }
+.source-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; background: #e8f0fe; color: #1a73e8; }
+.input-type-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.input-type { padding: 4px 12px; border-radius: 20px; border: 1px solid #ddd; font-size: 12px; cursor: pointer; background: #fff; color: #666; }
+.input-type.active { background: #667eea; color: #fff; border-color: #667eea; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🦞 万能格式转换器</h1>
+  <p>小红书 / 飞书 / 抖音 / Markdown → 公众号 HTML</p>
+</div>
+
+<div class="container">
+  <!-- 左：输入 -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">📥 输入</span>
+      <div class="input-type-selector">
+        <span class="input-type active" data-type="auto">自动识别</span>
+        <span class="input-type" data-type="xiaohongshu">小红书</span>
+        <span class="input-type" data-type="feishu">飞书</span>
+        <span class="input-type" data-type="douyin">抖音</span>
+        <span class="input-type" data-type="markdown">Markdown</span>
+        <span class="input-type" data-type="text">纯文本</span>
+      </div>
+    </div>
+    <div class="panel-body">
+      <textarea id="input" placeholder="粘贴链接或内容...&#10;&#10;支持：&#10;• 小红书笔记链接&#10;• 飞书文档链接&#10;• 抖音视频链接&#10;• Markdown / 纯文本"></textarea>
+    </div>
+    <div class="controls">
+      <label>输出格式：</label>
+      <select id="outputFormat">
+        <option value="wechat-html">公众号 HTML</option>
+        <option value="markdown">Markdown</option>
+        <option value="text">纯文本</option>
+      </select>
+      <button class="btn btn-primary" onclick="convert()">转换 ⚡</button>
+      <button class="btn btn-secondary" onclick="clearAll()">清空</button>
+    </div>
+  </div>
+
+  <!-- 右：输出 -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">📤 输出</span>
+      <div class="tabs">
+        <span class="tab active" data-tab="preview" onclick="switchTab('preview')">预览</span>
+        <span class="tab" data-tab="code" onclick="switchTab('code')">源码</span>
+        <span class="tab" data-tab="markdown" onclick="switchTab('markdown')">中间态</span>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div id="preview" class="preview"></div>
+      <pre id="code" class="preview" style="display:none;white-space:pre-wrap;font-size:13px;color:#333;"></pre>
+      <pre id="markdown" class="preview" style="display:none;white-space:pre-wrap;font-size:13px;color:#555;"></pre>
+    </div>
+    <div class="controls">
+      <button class="btn btn-copy" onclick="copyOutput()">📋 复制</button>
+      <button class="btn btn-secondary" onclick="downloadOutput()">💾 下载</button>
+      <span class="status" id="status">就绪</span>
+    </div>
+  </div>
+</div>
+
+<script src="lib/converter.js"></script>
+<script src="lib/markdown-to-wechat.js"></script>
+<script>
+// 输入类型识别
+function detectInputType(input) {
+  input = input.trim();
+  if (/^https?:\/\/.*xiaohongshu\.com/.test(input)) return 'xiaohongshu';
+  if (/^https?:\/\/.*feishu\.cn/.test(input) || /^https?:\/\/.*larksuite\.com/.test(input)) return 'feishu';
+  if (/^https?:\/\/.*douyin\.com/.test(input)) return 'douyin';
+  if (/^https?:\/\//.test(input)) return 'url';
+  return 'markdown';
+}
+
+// 输入类型切换
+document.querySelectorAll('.input-type').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.input-type').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+  });
+});
+
+let currentMarkdown = '';
+let currentOutput = '';
+
+function getSelectedInputType() {
+  const active = document.querySelector('.input-type.active');
+  return active ? active.dataset.type : 'auto';
+}
+
+async function convert() {
+  const input = document.getElementById('input').value;
+  if (!input.trim()) { updateStatus('请输入内容'); return; }
+
+  updateStatus('转换中...');
+  const inputType = getSelectedInputType();
+  const outputFormat = document.getElementById('outputFormat').value;
+
+  try {
+    // Step 1: 输入 → Markdown
+    let markdown = '';
+    const detected = inputType === 'auto' ? detectInputType(input) : inputType;
+
+    switch (detected) {
+      case 'xiaohongshu':
+        markdown = await convertXiaohongshu(input);
+        break;
+      case 'feishu':
+        markdown = await convertFeishu(input);
+        break;
+      case 'douyin':
+        markdown = await convertDouyin(input);
+        break;
+      case 'text':
+        markdown = input;
+        break;
+      case 'markdown':
+      default:
+        markdown = input;
+    }
+
+    currentMarkdown = markdown;
+    document.getElementById('markdown').textContent = markdown;
+
+    // Step 2: Markdown → 输出
+    switch (outputFormat) {
+      case 'wechat-html':
+        currentOutput = markdownToWechatHtml(markdown);
+        document.getElementById('preview').innerHTML = currentOutput;
+        break;
+      case 'markdown':
+        currentOutput = markdown;
+        document.getElementById('preview').innerHTML = marked.parse ? marked.parse(markdown) : markdown;
+        break;
+      case 'text':
+        currentOutput = markdown.replace(/[#*_\[\]()`]/g, '');
+        document.getElementById('preview').textContent = currentOutput;
+    }
+
+    document.getElementById('code').textContent = currentOutput;
+    updateStatus(`✅ 转换成功 | 输入: ${detected} | 输出: ${outputFormat}`);
+  } catch (err) {
+    updateStatus(`❌ 错误: ${err.message}`);
+    console.error(err);
+  }
+}
+
+// 输入源处理函数（占位，小q和小1填充实现）
+async function convertXiaohongshu(url) {
+  // 小红书链接需要后端抓取，先返回提示
+  if (typeof __convertXiaohongshu === 'function') {
+    return await __convertXiaohongshu(url);
+  }
+  throw new Error('小红书转换引擎尚未接入，请直接粘贴 Markdown 内容');
+}
+
+async function convertFeishu(url) {
+  if (typeof __convertFeishu === 'function') {
+    return await __convertFeishu(url);
+  }
+  throw new Error('飞书转换引擎尚未接入（待小1接入）');
+}
+
+async function convertDouyin(url) {
+  throw new Error('抖音转换引擎待开发');
+}
+
+// UI 工具函数
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+  ['preview', 'code', 'markdown'].forEach(id => {
+    document.getElementById(id).style.display = id === tab ? '' : 'none';
+  });
+}
+
+function copyOutput() {
+  if (!currentOutput) return;
+  navigator.clipboard.writeText(currentOutput).then(() => updateStatus('📋 已复制'));
+}
+
+function downloadOutput() {
+  if (!currentOutput) return;
+  const ext = document.getElementById('outputFormat').value === 'wechat-html' ? 'html' : 'md';
+  const blob = new Blob([currentOutput], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `converted.${ext}`;
+  a.click();
+}
+
+function clearAll() {
+  document.getElementById('input').value = '';
+  document.getElementById('preview').innerHTML = '';
+  document.getElementById('code').textContent = '';
+  document.getElementById('markdown').textContent = '';
+  currentMarkdown = '';
+  currentOutput = '';
+  updateStatus('已清空');
+}
+
+function updateStatus(msg) {
+  document.getElementById('status').textContent = msg;
+}
+</script>
+</body>
+</html>
