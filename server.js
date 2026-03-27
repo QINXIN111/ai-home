@@ -1,14 +1,17 @@
 /**
  * 万能格式转换器 - 后端服务
- * 小q 请求，工程师协助
  */
+import express from 'express';
+import { fetchXiaohongshu } from './src/xhs/fetch.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-const express = require('express');
-const { fetchXiaohongshu } = require('./src/xhs/fetch');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 app.use(express.json());
-app.use(express.static('src/web'));
+app.use(express.static(join(__dirname, 'src/web')));
 
 // 小红书链接 → Markdown
 app.post('/api/xhs', async (req, res) => {
