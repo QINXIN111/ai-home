@@ -186,13 +186,21 @@ async function convert() {
   }
 }
 
-// 输入源处理函数（占位，小q和小1填充实现）
+// 输入源处理函数
 async function convertXiaohongshu(url) {
-  // 小红书链接需要后端抓取，先返回提示
-  if (typeof __convertXiaohongshu === 'function') {
-    return await __convertXiaohongshu(url);
+  updateStatus('正在抓取小红书笔记...');
+  try {
+    const res = await fetch('/api/xhs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    return data.markdown;
+  } catch (err) {
+    throw new Error('小红书抓取失败: ' + err.message);
   }
-  throw new Error('小红书转换引擎尚未接入，请直接粘贴 Markdown 内容');
 }
 
 async function convertFeishu(url) {
