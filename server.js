@@ -4,6 +4,7 @@
  */
 import express from 'express';
 import { fetchXiaohongshu } from './src/xhs/fetch.js';
+import { fetchFeishu } from './src/feishu/fetch.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -32,8 +33,8 @@ app.post('/api/feishu', async (req, res) => {
   try {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: '请提供 url 参数' });
-    // 小1 的飞书模块待接入
-    res.json({ success: false, error: '飞书模块待接入' });
+    const markdown = await fetchFeishu(url);
+    res.json({ success: true, markdown });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
