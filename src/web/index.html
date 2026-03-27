@@ -204,10 +204,19 @@ async function convertXiaohongshu(url) {
 }
 
 async function convertFeishu(url) {
-  if (typeof __convertFeishu === 'function') {
-    return await __convertFeishu(url);
+  updateStatus('正在获取飞书文档...');
+  try {
+    const res = await fetch('/api/feishu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    return data.markdown;
+  } catch (err) {
+    throw new Error('飞书文档获取失败: ' + err.message);
   }
-  throw new Error('飞书转换引擎尚未接入（待小1接入）');
 }
 
 async function convertDouyin(url) {
